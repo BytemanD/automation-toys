@@ -1,5 +1,4 @@
 from distutils.command import install
-import os
 from easy2use.common import msgfmt
 
 

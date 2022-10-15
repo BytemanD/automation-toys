@@ -56,3 +56,39 @@ class TrafficTicket(object):
         LOG.debug('rename %s to: %s', self.file, dest_file)
         os.rename(self.file, dest_file)
         self.file = dest_file
+
+
+def screenshot_and_merge(pdf_list, output=None):
+    import fitz
+    from PIL import Image
+    import tempfile
+    import fpdf
+
+    merged_pdf = fpdf.FPDF()
+    x, y = 0, 0
+    img_width = 98
+    img_heigh = 144
+    img_num = 0
+    for pdf_file in pdf_list:
+        pdf = fitz.Document(pdf_file)
+        page = pdf[0]
+        mattrix = fitz.Matrix(1, 1)
+
+        pixmap = page.get_pixmap(matrix=mattrix, alpha=False)
+        with tempfile.TemporaryFile('wb', suffix='.png') as tmp_img:
+            LOG.debug('saving image to temp %s %s', tmp_img.name, img_num)
+            pixmap.save(tmp_img.name)
+            im = Image.open(tmp_img.name)
+            new_im = im.transpose(Image.ROTATE_90)
+            new_im.save(tmp_img.name, quality=95, subsampling=0)
+
+            if (img_num % 4) == 0:
+                merged_pdf.add_page()
+            merged_pdf.image(tmp_img.name, x, y, img_width, type='png')
+            img_num += 1
+            os.remove(tmp_img.name)
+        x = (x == 0) and (x + img_width + 10) or 0
+        y = (x == 0) and (y + img_heigh + 2) or y
+
+    merged_pdf.output(os.path.join(output or '.', 'merge.pdf'))
+    LOG.info('output merged pdf: %s', 'merge.pdf')

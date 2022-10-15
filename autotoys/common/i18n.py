@@ -11,6 +11,7 @@ def init_i18n():
     LOG.info('i18n locale path %s', locale_path)
     global_i18n.init('autotoys', locale_path)
 
+
 init_i18n()
 
 _ = global_i18n._

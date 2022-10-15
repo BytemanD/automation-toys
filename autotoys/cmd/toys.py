@@ -9,7 +9,6 @@ from easy2use.globals import log
 from easy2use.globals import i18n
 
 from autotoys.common import utils
-from autotoys.common import i18n
 from autotoys.common.tickets import traffic
 
 LOG = logging.getLogger(__name__)
@@ -29,6 +28,8 @@ class ParseTrafficTickets(cli.SubCli):
         cli.Arg('-n', '--check-code-num', default=6, type=int,
                 help='校验码后n位数量, 默认值: 6'),
         cli.Arg('-N', '--no-footer', action='store_true', help='不显示合计行'),
+        cli.Arg('-m', '--merge', action='store_true',
+                help='merger tickets to pdf'),
     ]
 
     def __call__(self, args):
@@ -72,8 +73,9 @@ class ParseTrafficTickets(cli.SubCli):
         if not args.no_footer:
             table.add_row([_('Total')] + ['-'] * 4 +
                           ['{:.2f}'.format(total_money)])
-
         print(table)
+        if args.merge:
+            traffic.screenshot_and_merge(pdf_list)
 
 
 def main():
