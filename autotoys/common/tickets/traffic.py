@@ -35,8 +35,8 @@ class TrafficTicket(object):
 
     @property
     def check_code(self):
-        found = re.findall(r'校 *验 *码 *. *([0-9 ]+)', self.text)
-        return found and found[0].replace(' ', '')
+        found = re.findall(r'校.*验.*码 *. *([0-9 ]+)', self.text)
+        return (found and found[0].replace(' ', '')) or ''
 
     @property
     def money(self):
@@ -58,7 +58,7 @@ class TrafficTicket(object):
         self.file = dest_file
 
 
-def screenshot_and_merge(pdf_list, output=None):
+def screenshot_and_merge(pdf_list, img_width=90, output=None, file_name=None):
     import fitz
     from PIL import Image
     import tempfile
@@ -66,29 +66,30 @@ def screenshot_and_merge(pdf_list, output=None):
 
     merged_pdf = fpdf.FPDF()
     x, y = 0, 0
-    img_width = 98
     img_heigh = 144
     img_num = 0
     for pdf_file in pdf_list:
         pdf = fitz.Document(pdf_file)
         page = pdf[0]
-        mattrix = fitz.Matrix(1, 1)
+        mattrix = fitz.Matrix(2, 2)
 
         pixmap = page.get_pixmap(matrix=mattrix, alpha=False)
-        with tempfile.TemporaryFile('wb', suffix='.png') as tmp_img:
+        with tempfile.TemporaryFile('wb', suffix='.jpg') as tmp_img:
             LOG.debug('saving image to temp %s %s', tmp_img.name, img_num)
             pixmap.save(tmp_img.name)
             im = Image.open(tmp_img.name)
             new_im = im.transpose(Image.ROTATE_90)
-            new_im.save(tmp_img.name, quality=95, subsampling=0)
+            new_im.save(tmp_img.name, quality=100, subsampling=0)
 
             if (img_num % 4) == 0:
                 merged_pdf.add_page()
-            merged_pdf.image(tmp_img.name, x, y, img_width, type='png')
+                x, y = 0, 0
+            merged_pdf.image(tmp_img.name, x, y, img_width, type='jpg')
             img_num += 1
+            # import pdb; pdb.set_trace()
             os.remove(tmp_img.name)
         x = (x == 0) and (x + img_width + 10) or 0
-        y = (x == 0) and (y + img_heigh + 2) or y
-
-    merged_pdf.output(os.path.join(output or '.', 'merge.pdf'))
-    LOG.info('output merged pdf: %s', 'merge.pdf')
+        y = (x == 0) and (y + img_heigh + 1) or y
+    output_file = file_name or 'merge.pdf'
+    merged_pdf.output(os.path.join(output or '.', output_file))
+    LOG.debug('output merged pdf: %s', output_file)

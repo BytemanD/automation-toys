@@ -6,8 +6,8 @@ import os
 
 from easy2use.globals import cli
 from easy2use.globals import log
-from easy2use.globals import i18n
 
+from autotoys.common import i18n
 from autotoys.common import utils
 from autotoys.common.tickets import traffic
 
@@ -24,15 +24,22 @@ class ParseTrafficTickets(cli.SubCli):
     ARGUMENTS = log.get_args() + [
         cli.Arg('pdf', nargs='+', help='PDF路径, 目录或者文件'),
         cli.Arg('-c', '--csv', action='store_true', help='输出csv格式'),
-        cli.Arg('-r', '--rename', help=f'重命名格式, 例如：{DEFAULT_RENAME}'),
+        cli.Arg('-r', '--rename', action='store_true', help=f'重命名格式'),
+        cli.Arg('-f', '--rename-format', default=DEFAULT_RENAME,
+                help=f'重命名格式, 默认：{DEFAULT_RENAME}'),
         cli.Arg('-n', '--check-code-num', default=6, type=int,
                 help='校验码后n位数量, 默认值: 6'),
         cli.Arg('-N', '--no-footer', action='store_true', help='不显示合计行'),
         cli.Arg('-m', '--merge', action='store_true',
-                help='merger tickets to pdf'),
+                help='PDF转为图片并且合并'),
+        cli.Arg('--img-width', type=int, default=90,
+                help='图片宽度, 如果合并得图片被覆盖，可适当减小改选项'),
     ]
 
     def __call__(self, args):
+        pdfminer_log = logging.getLogger('pdfminer')
+        pdfminer_log.setLevel(logging.INFO)
+
         pdf_list = []
         for pdf_path in args.pdf:
             LOG.debug('check path %s', pdf_path)
@@ -60,11 +67,10 @@ class ParseTrafficTickets(cli.SubCli):
             code = ticket.code
             date = ticket.date
             check_code = ticket.check_code
-            check_code = check_code[
-                (len(check_code) - args.check_code_num-1):-1]
+            check_code = check_code[(len(check_code) - args.check_code_num):]
             if args.rename:
-                new_name = args.rename.format(code=code, number=number,
-                                              date=date, check_code=check_code)
+                new_name = args.rename_format.format(
+                    code=code, number=number, date=date, check_code=check_code)
                 ticket.rename(new_name)
             table.add_row([ticket.name, ticket.code, ticket.number,
                            ticket.date, check_code, money])
@@ -75,7 +81,9 @@ class ParseTrafficTickets(cli.SubCli):
                           ['{:.2f}'.format(total_money)])
         print(table)
         if args.merge:
-            traffic.screenshot_and_merge(pdf_list)
+            traffic.screenshot_and_merge(pdf_list, img_width=args.img_width,
+                                         file_name='merged.pdf')
+            print('合并成功，文件路径: merged.pdf')
 
 
 def main():
