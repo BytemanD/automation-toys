@@ -4,4 +4,4 @@ tools
 PyMuPDF
 pdfplumber
 fpdf
-https://github.com/fjboy/easy-to-use/releases/download/1.0.4/easy2use-1.0.4-py3-none-any.whl
+https://github.com/fjboy/easy-to-use/releases/download/1.0.4/easy2use-1.0.6-py6-none-any.whl

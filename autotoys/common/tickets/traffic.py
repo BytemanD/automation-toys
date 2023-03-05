@@ -41,7 +41,7 @@ class TrafficTicket(object):
     @property
     def money(self):
         found = re.findall(r'.小写. *. *([0-9.]+)', self.text)
-        return found and found[0].replace(' ', '')
+        return found and found[0].replace(' ', '') or None
 
     def parse(self):
         with pdfplumber.open(self.file) as pdf:
